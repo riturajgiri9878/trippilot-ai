@@ -17,20 +17,27 @@ class TravelState(TypedDict):
     activities: list[ActivityResult]
 
     weather: dict[str, Any]
+
+    currency_conversion: dict[str, Any]
+
     budget: BudgetResult | None
+
     itinerary: list[dict[str, Any]]
 
     warnings: list[str]
     errors: list[dict[str, Any]]
 
 
-def create_initial_state(request: TripRequest) -> TravelState:
+def create_initial_state(
+    request: TripRequest,
+) -> TravelState:
     return {
         "request": request,
         "flights": [],
         "stays": [],
         "activities": [],
         "weather": {},
+        "currency_conversion": {},
         "budget": None,
         "itinerary": [],
         "warnings": [],

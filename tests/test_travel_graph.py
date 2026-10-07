@@ -235,3 +235,61 @@ def test_graph_continues_when_weather_provider_fails(
         result["errors"][0]["error"]
         == "RuntimeError"
     )
+
+def test_graph_continues_when_currency_provider_fails(
+    monkeypatch,
+):
+    def failing_currency_agent(state):
+        raise RuntimeError(
+            "Simulated currency provider failure"
+        )
+
+    monkeypatch.setattr(
+        travel_graph_module,
+        "currency_agent",
+        failing_currency_agent,
+    )
+
+    trip = create_test_trip()
+
+    initial_state = create_initial_state(trip)
+
+    result = (
+        travel_graph_module
+        .travel_graph
+        .invoke(initial_state)
+    )
+
+    assert result["currency_conversion"] == {}
+
+    assert len(result["flights"]) == 1
+    assert len(result["stays"]) == 1
+    assert len(result["activities"]) == 1
+
+    assert result["budget"] is not None
+    assert result["budget"].total_cost == 15800
+
+    assert len(result["itinerary"]) == 5
+
+    assert (
+        "Currency conversion is currently unavailable."
+        in result["warnings"]
+    )
+
+    currency_errors = [
+        error
+        for error in result["errors"]
+        if error["agent"] == "currency_agent"
+    ]
+
+    assert len(currency_errors) == 1
+
+    assert (
+        currency_errors[0]["stage"]
+        == "live_provider"
+    )
+
+    assert (
+        currency_errors[0]["error"]
+        == "RuntimeError"
+    )

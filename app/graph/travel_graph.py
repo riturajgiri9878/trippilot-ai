@@ -2,6 +2,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agents.activity_agent import activity_agent
 from app.agents.budget_agent import budget_agent
+from app.agents.currency_agent import currency_agent
 from app.agents.flight_agent import (
     fallback_flight_agent,
     flight_agent,
@@ -81,6 +82,31 @@ def safe_weather_agent(
         return state
 
 
+def safe_currency_agent(
+    state: TravelState,
+) -> TravelState:
+    try:
+        return currency_agent(state)
+
+    except Exception as error:
+        state["errors"].append(
+            {
+                "agent": "currency_agent",
+                "stage": "live_provider",
+                "error": type(error).__name__,
+            }
+        )
+
+        state["warnings"].append(
+            "Currency conversion is currently "
+            "unavailable."
+        )
+
+        state["currency_conversion"] = {}
+
+        return state
+
+
 def build_travel_graph():
     graph = StateGraph(TravelState)
 
@@ -102,6 +128,11 @@ def build_travel_graph():
     graph.add_node(
         "weather_agent",
         safe_weather_agent,
+    )
+
+    graph.add_node(
+        "currency_agent",
+        safe_currency_agent,
     )
 
     graph.add_node(
@@ -136,6 +167,11 @@ def build_travel_graph():
 
     graph.add_edge(
         "weather_agent",
+        "currency_agent",
+    )
+
+    graph.add_edge(
+        "currency_agent",
         "budget_agent",
     )
 

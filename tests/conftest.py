@@ -1,10 +1,11 @@
 import pytest
 
+import app.agents.currency_agent as currency_agent_module
 import app.agents.weather_agent as weather_agent_module
 
 
 @pytest.fixture(autouse=True)
-def mock_live_weather(monkeypatch):
+def mock_external_services(monkeypatch):
     def fake_get_weather(
         location: str,
         country_code: str = "IN",
@@ -28,8 +29,30 @@ def mock_live_weather(monkeypatch):
             "source_type": "live",
         }
 
+    def fake_convert_currency(
+        amount: float,
+        from_currency: str,
+        to_currency: str,
+    ) -> dict:
+        return {
+            "original_amount": amount,
+            "original_currency": from_currency,
+            "converted_amount": 311.40,
+            "converted_currency": to_currency,
+            "rate": 0.01038,
+            "rate_date": "2026-10-07",
+            "provider": "frankfurter",
+            "source_type": "live",
+        }
+
     monkeypatch.setattr(
         weather_agent_module,
         "get_weather",
         fake_get_weather,
+    )
+
+    monkeypatch.setattr(
+        currency_agent_module,
+        "convert_currency",
+        fake_convert_currency,
     )
