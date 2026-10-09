@@ -1,0 +1,66 @@
+services:
+  api:
+    build:
+      context: .
+
+    container_name: trippilot-api
+
+    command:
+      - python
+      - -m
+      - uvicorn
+      - app.api.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./data:/app/data
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+        ]
+
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+
+  ui:
+    build:
+      context: .
+
+    container_name: trippilot-ui
+
+    command:
+      - python
+      - -m
+      - streamlit
+      - run
+      - app/ui/streamlit_app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+
+    ports:
+      - "8501:8501"
+
+    environment:
+      API_BASE_URL: http://api:8000
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    restart: unless-stopped
